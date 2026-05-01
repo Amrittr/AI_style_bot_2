@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StyleBot - Your AI Personal Shopper</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <div class="header-left" style="flex-direction: row; align-items: center; gap: 15px;">
+                <a href="index.html" style="color: white; text-decoration: none; font-size: 1.4rem; transition: opacity 0.2s;" onmouseover="this.style.opacity=0.7" onmouseout="this.style.opacity=1">←</a>
+                <div>
+                    <h1 style="margin-bottom: 0;">StyleBot ✦</h1>
+                    <div class="subtitle">Your AI Personal Shopper</div>
+                </div>
+            </div>
+            <div class="header-right">
+                <span class="status"><span class="dot"></span> Online</span>
+            </div>
+        </header>
+        
+        <main class="chat-container" id="chat-container">
+            <div class="message bot">
+                <div class="avatar"></div>
+                <div class="bubble">
+                    Hey there! Welcome to StyleBot ✦ I'm your personal fashion assistant and I'm SO excited to help you look amazing!<br><br>
+                    Let's start with the basics — could you tell me your <strong>age, gender, and the occasion</strong> you're dressing for? (e.g. 25, female, casual day out)
+                </div>
+            </div>
+        </main>
+        
+        <div class="typing-indicator hidden" id="typing-indicator">
+            <div class="avatar"></div>
+            <div class="bubble typing">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+
+        <div class="bottom-area">
+            <div class="quick-chips" id="quick-chips">
+                <button class="chip">Casual day out</button>
+                <button class="chip">Party tonight</button>
+                <button class="chip">Office wear</button>
+                <button class="chip">Date night</button>
+                <button class="chip">Wedding guest</button>
+            </div>
+            <div id="image-preview-container" style="display: none; margin-bottom: 10px; position: relative; width: max-content;">
+                <img id="image-preview" src="" alt="Preview" style="max-height: 100px; border-radius: 8px;">
+                <button id="remove-image" style="position: absolute; top: -5px; right: -5px; background: #ff4757; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold;">×</button>
+            </div>
+            <div class="input-area" style="align-items: center;">
+                <label for="image-upload" style="cursor: pointer; background: var(--bg-panel); border: 1px solid var(--border-color); padding: 12px 16px; border-radius: 8px; color: var(--text-light); transition: border-color 0.2s;" title="Upload Image">
+                    📁
+                </label>
+                <input type="file" id="image-upload" accept="image/*" style="display: none;">
+                
+                <button id="camera-btn" style="background: var(--bg-panel); border: 1px solid var(--border-color); padding: 12px 16px; border-radius: 8px; color: var(--text-light); cursor: pointer; transition: border-color 0.2s;" title="Take Photo">
+                    📸
+                </button>
+
+                <input type="text" id="user-input" placeholder="Type your style preference..." autocomplete="off">
+                <button id="send-btn">Send ➤</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Camera Modal -->
+    <div id="camera-modal" class="overlay hidden">
+        <div class="modal" style="width: auto; max-width: 90%; padding: 20px;">
+            <h2 style="color: var(--text-light); margin-bottom: 15px;">Take a Photo</h2>
+            <div style="position: relative; margin-bottom: 16px; background: #000; border-radius: 8px; overflow: hidden; display: flex; justify-content: center;">
+                <video id="camera-feed" autoplay playsinline style="width: 100%; max-height: 50vh; object-fit: cover;"></video>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button id="snap-btn" style="flex: 1; background: var(--blush-pink); color: #000;">📸 Snap</button>
+                <button id="close-camera-btn" style="flex: 1; background: #444;">Cancel</button>
+            </div>
+            <canvas id="camera-canvas" style="display: none;"></canvas>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDabzhKYknphhV7dUbN7pgcYB940e9z1-w",
+            authDomain: "aistylebot-6e93b.firebaseapp.com",
+            databaseURL: "https://aistylebot-6e93b-default-rtdb.firebaseio.com",
+            projectId: "aistylebot-6e93b",
+            storageBucket: "aistylebot-6e93b.firebasestorage.app",
+            messagingSenderId: "29328792960",
+            appId: "1:29328792960:web:f3ebc8afe0581dedb43565",
+            measurementId: "G-1QZ0W9K5S4"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                // Not logged in, redirect to login page
+                window.location.href = 'login.html';
+            }
+        });
+    </script>
+</body>
+</html>
