@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StyleBot - Profile</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .profile-container {
+            width: 100%;
+            max-width: 400px;
+            padding: 40px;
+            background: var(--bg-panel);
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            border: 1px solid var(--border-color);
+            text-align: center;
+        }
+        .profile-avatar {
+            font-size: 4rem;
+            margin-bottom: 15px;
+            display: inline-block;
+            background: rgba(255,255,255,0.05);
+            width: 100px;
+            height: 100px;
+            line-height: 100px;
+            border-radius: 50%;
+        }
+        .btn-logout {
+            background: #ff4757;
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 8px;
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            width: 100%;
+            margin-top: 20px;
+        }
+        .btn-logout:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="profile-container">
+        <a href="index.html" style="color: white; text-decoration: none; font-size: 1.4rem; position: absolute; top: 20px; left: 20px;">← Back</a>
+        
+        <div style="position: relative; display: inline-block; margin-bottom: 15px;">
+            <div id="profile-avatar" style="font-size: 4rem; width: 100px; height: 100px; line-height: 100px; border-radius: 50%; background: rgba(255,255,255,0.05); overflow: hidden; display: flex; align-items: center; justify-content: center; margin: 0;">
+                👤
+            </div>
+            <label for="profile-pic-upload" style="position: absolute; bottom: 0; right: 0; background: var(--deep-rose); border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; border: 2px solid var(--bg-panel); transition: transform 0.2s;">
+                📷
+            </label>
+            <input type="file" id="profile-pic-upload" accept="image/*" style="display: none;">
+        </div>
+        <h2 id="profile-name" style="color: var(--text-light); margin-bottom: 5px;">Loading...</h2>
+        <p id="profile-email" style="color: #a0a0a0; font-size: 0.95rem; margin-bottom: 5px;"></p>
+        <p id="profile-age" style="color: var(--blush-pink); font-weight: 600; font-size: 1.1rem; margin-bottom: 24px;"></p>
+        
+        <div id="seller-products" style="display: none; text-align: left; margin-bottom: 20px; max-height: 300px; overflow-y: auto; padding-right: 5px;"></div>
+
+        <button id="logout-btn-main" class="btn-logout">Logout</button>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, updateDoc, collection, query, where, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDabzhKYknphhV7dUbN7pgcYB940e9z1-w",
+            authDomain: "aistylebot-6e93b.firebaseapp.com",
+            databaseURL: "https://aistylebot-6e93b-default-rtdb.firebaseio.com",
+            projectId: "aistylebot-6e93b",
+            storageBucket: "aistylebot-6e93b.firebasestorage.app",
+            messagingSenderId: "29328792960",
+            appId: "1:29328792960:web:f3ebc8afe0581dedb43565",
+            measurementId: "G-1QZ0W9K5S4"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const docSnap = await getDoc(doc(db, "users", user.uid));
+                const userData = docSnap.exists() ? docSnap.data() : null;
+
+                if (userData) {
+                    if (userData.profilePic) {
+                        document.getElementById('profile-avatar').innerHTML = `<img src="${userData.profilePic}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                    }
+
+                    document.getElementById('profile-pic-upload').addEventListener('change', (e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                            const reader = new FileReader();
+                            reader.onload = async (e) => {
+                                // Simple compress
+                                let img = new Image();
+                                img.src = e.target.result;
+                                img.onload = async () => {
+                                    let canvas = document.createElement('canvas');
+                                    let width = img.width; let height = img.height;
+                                    const max = 300;
+                                    if (width > height) { if (width > max) { height *= max / width; width = max; } }
+                                    else { if (height > max) { width *= max / height; height = max; } }
+                                    canvas.width = width; canvas.height = height;
+                                    canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+                                    const base64 = canvas.toDataURL('image/jpeg', 0.6);
+                                    
+                                    document.getElementById('profile-avatar').innerHTML = `<img src="${base64}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                                    await updateDoc(doc(db, "users", user.uid), { profilePic: base64 });
+                                };
+                            };
+                            reader.readAsDataURL(file);
+                        }
+                    });
+                }
+
+                if (userData && userData.role === 'seller') {
+                    // Seller Profile (Read Only)
+                    document.getElementById('profile-name').textContent = userData.companyName || "Seller";
+                    document.getElementById('profile-email').textContent = `Email: ${userData.email}`;
+                    
+                    // Fetch total products
+                    const q = query(collection(db, "products"), where("sellerId", "==", user.uid));
+                    const querySnapshot = await getDocs(q);
+                    const totalProducts = querySnapshot.size;
+
+                    document.getElementById('profile-age').innerHTML = `
+                        <p style="color: #a0a0a0; font-size:1rem; margin: 5px 0;">Phone: <span style="color:white;">${userData.phone}</span></p>
+                        <p style="color: #a0a0a0; font-size:1rem; margin: 5px 0;">Total Products Listed: <span style="color:white; font-weight: 600;">${totalProducts}</span></p>
+                        <p style="color: #a0a0a0; font-size:1rem; margin: 5px 0;">Status: <span style="color:${userData.isVerified ? '#2ed573' : '#ffaa00'}; font-weight: 600;">${userData.isVerified ? 'Verified ✓' : 'Pending Verification'}</span></p>
+                    `;
+
+                    if (totalProducts > 0) {
+                        const pContainer = document.getElementById('seller-products');
+                        pContainer.style.display = 'block';
+                        pContainer.innerHTML = '<h3 style="color:var(--text-light); margin-bottom:10px; font-size: 1.1rem;">My Products</h3><div id="p-list" style="display:flex; flex-direction:column; gap:10px;"></div>';
+                        const list = document.getElementById('p-list');
+                        
+                        querySnapshot.forEach(docSnap => {
+                            const p = docSnap.data();
+                            list.innerHTML += `
+                                <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+                                    <div style="display:flex; align-items:center; gap: 10px;">
+                                        <img src="${p.image || 'hero.png'}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">
+                                        <div>
+                                            <div style="color:white; font-size:0.9rem;">${p.name}</div>
+                                            <div style="color:var(--blush-pink); font-size:0.8rem;">₹${p.price}</div>
+                                        </div>
+                                    </div>
+                                    <button class="btn-delete-profile" data-id="${docSnap.id}" style="background: transparent; color: #ff4757; border: 1px solid #ff4757; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">Delete</button>
+                                </div>
+                            `;
+                        });
+
+                        document.querySelectorAll('.btn-delete-profile').forEach(btn => {
+                            btn.addEventListener('click', async (e) => {
+                                if (confirm('Delete this product?')) {
+                                    await deleteDoc(doc(db, "products", e.target.getAttribute('data-id')));
+                                    window.location.reload();
+                                }
+                            });
+                        });
+                    }
+                } else {
+                    // Student Profile (Editable)
+                    document.getElementById('profile-name').innerHTML = `
+                        ${userData?.name || user.displayName || "Student"} 
+                        <span id="edit-name" style="font-size:1rem; cursor:pointer; color:var(--blush-pink);">✏️</span>
+                    `;
+                    document.getElementById('profile-email').textContent = user.email;
+                    
+                    const dob = localStorage.getItem(`user_dob_${user.uid}`);
+                    let ageText = "Not provided";
+                    if (dob) {
+                        const dobDate = new Date(dob);
+                        const ageDt = new Date(Date.now() - dobDate.getTime());
+                        ageText = Math.abs(ageDt.getUTCFullYear() - 1970) + " years old";
+                    }
+                    document.getElementById('profile-age').textContent = `Age: ${ageText}`;
+
+                    document.getElementById('edit-name').addEventListener('click', async () => {
+                        const newName = prompt("Enter your new name:");
+                        if (newName && newName.trim() !== "") {
+                            await updateProfile(user, { displayName: newName });
+                            if (userData) {
+                                await updateDoc(doc(db, "users", user.uid), { name: newName });
+                            }
+                            window.location.reload();
+                        }
+                    });
+                }
+            } else {
+                window.location.href = 'login.html';
+            }
+        });
+
+        document.getElementById('logout-btn-main').addEventListener('click', async () => {
+            await signOut(auth);
+            localStorage.removeItem('isLoggedIn');
+            window.location.href = 'index.html';
+        });
+    </script>
+</body>
+</html>

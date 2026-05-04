@@ -10,13 +10,45 @@
 <body class="home-body">
     <!-- Navbar -->
     <nav class="navbar">
-        <div class="nav-logo">StyleBot ✦</div>
+        <a href="index.html" class="nav-logo" style="text-decoration:none; color:inherit;">StyleBot ✦</a>
         <div class="nav-links">
             <a href="#features">Features</a>
-            <a href="login.html">Login</a>
+            <a href="shop.html">Shop Now</a>
+            <a href="seller.html" id="nav-seller">Become a Seller</a>
+            <a href="admin.html" id="nav-admin" style="display: none; color: #ffaa00; font-weight: 600;">Verify Sellers</a>
+            <a href="login.html" id="nav-login">Login</a>
+            <a href="profile.html" id="nav-profile" style="display: none; color: var(--blush-pink);">Profile</a>
+            <a href="#" id="nav-logout" style="display: none; color: #ff6b6b;">Logout</a>
             <a href="chat.html" class="nav-btn">Start Chatting</a>
         </div>
     </nav>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            if (localStorage.getItem('isLoggedIn') === 'true') {
+                document.getElementById('nav-login').style.display = 'none';
+                document.getElementById('nav-profile').style.display = 'inline';
+                const logoutBtn = document.getElementById('nav-logout');
+                logoutBtn.style.display = 'inline';
+                logoutBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    localStorage.removeItem('isLoggedIn');
+                    localStorage.removeItem('userRole');
+                    window.location.reload();
+                });
+
+                if (localStorage.getItem('userRole') === 'admin') {
+                    const navSeller = document.getElementById('nav-seller');
+                    if (navSeller) navSeller.style.display = 'none';
+                    const navAdmin = document.getElementById('nav-admin');
+                    if (navAdmin) navAdmin.style.display = 'inline';
+                } else if (localStorage.getItem('userRole') === 'seller') {
+                    const navSeller = document.getElementById('nav-seller');
+                    if (navSeller) navSeller.textContent = 'Add a Product';
+                }
+            }
+        });
+    </script>
 
     <!-- Hero Section -->
     <header class="hero-section">
@@ -24,7 +56,7 @@
             <h1 class="hero-title">Your Style,<br><span class="gradient-text">Curated by AI.</span></h1>
             <p class="hero-subtitle">Meet StyleBot — your personal fashion assistant. Discover outfits you'll love, tailored exactly to your budget, occasion, and preferences.</p>
             <div class="hero-actions">
-                <a href="chat.html" class="btn-primary">Try StyleBot Free</a>
+                <a href="shop.html" class="btn-primary">Get Your First Outfit</a>
                 <a href="#features" class="btn-secondary">Explore Features</a>
             </div>
         </div>

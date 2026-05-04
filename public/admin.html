@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StyleBot - Admin Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .admin-container {
+            width: 100%;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 40px;
+            background: rgba(22, 22, 26, 0.8);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            border: 1px solid var(--border-color);
+        }
+        .admin-container h2 {
+            margin-bottom: 24px;
+            color: var(--text-light);
+            text-align: center;
+        }
+        .seller-card {
+            background: #1e1e1e;
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .seller-info p {
+            margin: 5px 0;
+            color: #a0a0a0;
+        }
+        .seller-info strong {
+            color: white;
+        }
+        .btn-verify {
+            background: #2ed573;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .btn-verified {
+            background: transparent;
+            color: #2ed573;
+            border: 1px solid #2ed573;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body style="display: flex; flex-direction: column; align-items: center; min-height: 100vh;">
+    
+    <nav style="width: 100%; max-width: 900px; display: flex; justify-content: space-between; margin-top: 20px;">
+        <a href="index.html" style="color: white; text-decoration: none; font-size: 1.2rem;">← Back to Home</a>
+        <div style="color: #ffaa00; font-weight: 600; font-size: 1.2rem;">Admin Dashboard</div>
+    </nav>
+
+    <div class="admin-container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <h2 style="margin:0; color: var(--text-light);">Seller Dashboard</h2>
+            <div id="total-sellers" style="background: var(--blush-pink); color: black; padding: 5px 15px; border-radius: 20px; font-weight: 600;">Total Sellers: 0</div>
+        </div>
+        <div id="sellers-list">
+            <p style="text-align: center; color: var(--text-light);">Loading sellers...</p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getFirestore, collection, query, where, getDocs, doc, updateDoc, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDabzhKYknphhV7dUbN7pgcYB940e9z1-w",
+            authDomain: "aistylebot-6e93b.firebaseapp.com",
+            databaseURL: "https://aistylebot-6e93b-default-rtdb.firebaseio.com",
+            projectId: "aistylebot-6e93b",
+            storageBucket: "aistylebot-6e93b.firebasestorage.app",
+            messagingSenderId: "29328792960",
+            appId: "1:29328792960:web:f3ebc8afe0581dedb43565",
+            measurementId: "G-1QZ0W9K5S4"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const sellersList = document.getElementById('sellers-list');
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const docSnap = await getDoc(doc(db, "users", user.uid));
+                if (docSnap.exists() && docSnap.data().role === 'admin') {
+                    loadSellers();
+                } else {
+                    document.body.innerHTML = "<h2 style='color:red; text-align:center; margin-top:50px;'>Access Denied. Admins Only.</h2>";
+                }
+            } else {
+                window.location.href = 'login.html';
+            }
+        });
+
+        async function loadSellers() {
+            try {
+                const q = query(collection(db, "users"), where("role", "==", "seller"));
+                const querySnapshot = await getDocs(q);
+                
+                sellersList.innerHTML = '';
+                
+                if (querySnapshot.empty) {
+                    sellersList.innerHTML = '<p style="text-align:center; color:#a0a0a0;">No sellers found.</p>';
+                    document.getElementById('total-sellers').textContent = `Total Sellers: 0`;
+                    return;
+                }
+
+                document.getElementById('total-sellers').textContent = `Total Sellers: ${querySnapshot.size}`;
+
+                querySnapshot.forEach((docSnap) => {
+                    const seller = docSnap.data();
+                    const card = document.createElement('div');
+                    card.className = 'seller-card';
+                    card.style.flexDirection = 'column';
+                    card.style.alignItems = 'stretch';
+                    
+                    let btnHTML = seller.isVerified 
+                        ? `<button class="btn-verified" disabled>Verified</button>`
+                        : `<button class="btn-verify" data-id="${docSnap.id}">Verify Now</button>`;
+
+                    card.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                            <div class="seller-info">
+                                <p><strong>Company:</strong> <a href="#" class="view-products" data-id="${docSnap.id}" style="color:var(--blush-pink); text-decoration:none;">${seller.companyName} <span style="font-size:0.8rem;">(View Products)</span></a></p>
+                                <p><strong>Email:</strong> ${seller.email}</p>
+                                <p><strong>Phone:</strong> ${seller.phone}</p>
+                                <p><strong>Seller ID:</strong> ${docSnap.id}</p>
+                            </div>
+                            <div>
+                                ${btnHTML}
+                            </div>
+                        </div>
+                        <div id="products-${docSnap.id}" style="display:none; margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 15px;"></div>
+                    `;
+                    sellersList.appendChild(card);
+                });
+
+                // Attach event listeners safely
+                document.querySelectorAll('.btn-verify').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        const userId = e.target.getAttribute('data-id');
+                        try {
+                            await updateDoc(doc(db, "users", userId), { isVerified: true });
+                            alert("Seller Verified Successfully!");
+                            loadSellers();
+                        } catch (error) {
+                            console.error("Error verifying:", error);
+                            alert("Failed to verify seller.");
+                        }
+                    });
+                });
+
+                document.querySelectorAll('.view-products').forEach(link => {
+                    link.addEventListener('click', async (e) => {
+                        e.preventDefault();
+                        const sellerId = e.target.getAttribute('data-id');
+                        const pContainer = document.getElementById(`products-${sellerId}`);
+                        
+                        if (pContainer.style.display === 'block') {
+                            pContainer.style.display = 'none';
+                            return;
+                        }
+
+                        pContainer.innerHTML = '<p style="color:#a0a0a0;">Loading products...</p>';
+                        pContainer.style.display = 'block';
+
+                        const pq = query(collection(db, "products"), where("sellerId", "==", sellerId));
+                        const pSnap = await getDocs(pq);
+                        
+                        if (pSnap.empty) {
+                            pContainer.innerHTML = '<p style="color:#a0a0a0;">No products listed yet.</p>';
+                            return;
+                        }
+
+                        pContainer.innerHTML = `<h4 style="color:var(--text-light); margin-bottom: 10px;">Listed Products (${pSnap.size})</h4><div style="display:flex; flex-direction:column; gap:10px;"></div>`;
+                        const grid = pContainer.querySelector('div');
+
+                        pSnap.forEach(pDoc => {
+                            const p = pDoc.data();
+                            grid.innerHTML += `
+                                <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+                                    <div style="display:flex; align-items:center; gap: 10px;">
+                                        <img src="${p.image || 'hero.png'}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">
+                                        <div>
+                                            <div style="color:white; font-size:0.9rem;">${p.name}</div>
+                                            <div style="color:var(--blush-pink); font-size:0.8rem;">₹${p.price}</div>
+                                        </div>
+                                    </div>
+                                    <button class="btn-delete-admin" data-id="${pDoc.id}" data-seller="${sellerId}" style="background: transparent; color: #ff4757; border: 1px solid #ff4757; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">Delete</button>
+                                </div>
+                            `;
+                        });
+
+                        document.querySelectorAll(`.btn-delete-admin[data-seller="${sellerId}"]`).forEach(btn => {
+                            btn.addEventListener('click', async (e) => {
+                                if (confirm('Delete this product?')) {
+                                    await deleteDoc(doc(db, "products", e.target.getAttribute('data-id')));
+                                    link.click(); // Close
+                                    link.click(); // Re-open to refresh
+                                }
+                            });
+                        });
+                    });
+                });
+            } catch (error) {
+                console.error("Error loading sellers:", error);
+                sellersList.innerHTML = '<p style="text-align:center; color:#ff6b6b;">Failed to load sellers.</p>';
+            }
+        }
+    </script>
+</body>
+</html>

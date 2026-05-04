@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StyleBot - Seller Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .shop-container {
+            width: 100%;
+            max-width: 600px;
+            padding: 40px;
+            background: rgba(22, 22, 26, 0.8);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            border: 1px solid var(--border-color);
+            margin-top: 20px;
+        }
+        .shop-container h2 {
+            margin-bottom: 24px;
+            color: var(--text-light);
+            text-align: center;
+        }
+        .product-form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .product-form input, .product-form textarea, .product-form select {
+            padding: 14px 16px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: #1e1e1e;
+            color: white;
+            font-size: 1rem;
+            outline: none;
+            font-family: 'Outfit', sans-serif;
+        }
+        .product-form input:focus, .product-form textarea:focus, .product-form select:focus {
+            border-color: var(--blush-pink);
+        }
+        .image-upload-area {
+            border: 2px dashed var(--border-color);
+            padding: 40px;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+        .image-upload-area:hover {
+            border-color: var(--blush-pink);
+        }
+        .btn-submit {
+            background: linear-gradient(135deg, var(--deep-rose), var(--accent-purple));
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            margin-top: 10px;
+        }
+        .btn-submit:hover {
+            opacity: 0.9;
+        }
+        .preview-img {
+            max-width: 100%;
+            border-radius: 8px;
+            margin-top: 10px;
+            display: none;
+        }
+        
+        .verification-badge {
+            background: rgba(255, 170, 0, 0.1);
+            color: #ffaa00;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-block;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 170, 0, 0.2);
+        }
+    </style>
+</head>
+<body style="display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 20px 0;">
+    
+    <nav style="width: 100%; max-width: 900px; display: flex; justify-content: space-between; margin-bottom: 20px;">
+        <a href="index.html" style="color: white; text-decoration: none; font-size: 1.2rem;">← Back to Home</a>
+        <div style="display: flex; gap: 20px; align-items: center;">
+            <a href="admin.html" id="nav-admin" style="display: none; color: #ffaa00; text-decoration: none; font-weight: 600;">Verify Sellers</a>
+            <a href="profile.html" id="nav-profile" style="display: none; color: var(--blush-pink); text-decoration: none; font-weight: 500;">Profile</a>
+            <a href="#" id="nav-logout" style="display: none; color: #ff6b6b; text-decoration: none; font-weight: 500;">Logout</a>
+            <div style="color: var(--blush-pink); font-weight: 600; font-size: 1.2rem;">Seller Portal</div>
+        </div>
+    </nav>
+
+    <div class="shop-container" id="auth-section">
+        <h2>Become a Seller</h2>
+        <div id="seller-status" style="display: none; text-align: center; margin-bottom: 20px;">
+            <div class="verification-badge">Status: Pending Verification</div>
+            <p style="color: #b0b0b0; font-size: 0.9rem;">Your account is currently under review by our team. You can still prepare listings, but they won't be public on the Store until verified.</p>
+        </div>
+        
+        <form class="product-form" id="seller-auth-form">
+            <input type="text" id="brand-name" placeholder="Brand / Company Name" required>
+            <input type="email" id="seller-email" placeholder="Business Email" required>
+            <input type="password" id="seller-password" placeholder="Password" required>
+            <input type="tel" id="seller-phone" placeholder="Mobile Number" required>
+            <textarea id="brand-desc" placeholder="Tell us about your brand..." rows="3"></textarea>
+            <button type="submit" class="btn-submit">Register as Seller</button>
+            <p id="seller-error" style="color: #ff6b6b; text-align: center; margin-top: 10px;"></p>
+        </form>
+    </div>
+
+    <div class="shop-container" id="listing-section" style="display: none;">
+        <h2>List Your Clothes</h2>
+        <form class="product-form" id="listing-form">
+            <input type="text" id="product-name" placeholder="Product Name (e.g. Vintage Denim Jacket)" required>
+            <select id="product-category" required>
+                <option value="" disabled selected>Select Category</option>
+                <option value="tops">Tops & T-Shirts</option>
+                <option value="bottoms">Bottoms & Jeans</option>
+                <option value="dresses">Dresses</option>
+                <option value="outerwear">Outerwear & Jackets</option>
+                <option value="accessories">Accessories</option>
+            </select>
+            <input type="number" id="product-price" placeholder="Price (INR)" required>
+            <textarea id="product-desc" placeholder="Product Description..." rows="4" required></textarea>
+            
+            <label class="image-upload-area" for="product-image">
+                <div style="font-size: 2rem; margin-bottom: 10px;">📸</div>
+                <div style="color: var(--text-light); font-weight: 500;">Click to upload product image</div>
+                <div style="color: #666; font-size: 0.85rem; margin-top: 5px;">PNG, JPG up to 5MB</div>
+            </label>
+            <input type="file" id="product-image" accept="image/*" style="display: none;">
+            <img id="preview" class="preview-img">
+            
+            <button type="submit" class="btn-submit">Add to Shop</button>
+        </form>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDabzhKYknphhV7dUbN7pgcYB940e9z1-w",
+            authDomain: "aistylebot-6e93b.firebaseapp.com",
+            databaseURL: "https://aistylebot-6e93b-default-rtdb.firebaseio.com",
+            projectId: "aistylebot-6e93b",
+            storageBucket: "aistylebot-6e93b.firebasestorage.app",
+            messagingSenderId: "29328792960",
+            appId: "1:29328792960:web:f3ebc8afe0581dedb43565",
+            measurementId: "G-1QZ0W9K5S4"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const logoutBtn = document.getElementById('nav-logout');
+        if(logoutBtn) {
+            logoutBtn.style.display = 'inline';
+            logoutBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                localStorage.removeItem('isLoggedIn');
+                localStorage.removeItem('userRole');
+                window.location.reload();
+            });
+        }
+        if (localStorage.getItem('userRole') === 'admin') {
+            const navAdmin = document.getElementById('nav-admin');
+            if (navAdmin) navAdmin.style.display = 'inline';
+        }
+
+        const authSection = document.getElementById('auth-section');
+        const authForm = document.getElementById('seller-auth-form');
+        const sellerStatus = document.getElementById('seller-status');
+        const listingSection = document.getElementById('listing-section');
+        const sellerError = document.getElementById('seller-error');
+
+        let currentUserDoc = null;
+
+        // Check authentication state
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const docRef = doc(db, "users", user.uid);
+                const docSnap = await getDoc(docRef);
+                
+                if (docSnap.exists()) {
+                    currentUserDoc = docSnap.data();
+                    if (currentUserDoc.role === 'seller') {
+                        authForm.style.display = 'none';
+                        if (currentUserDoc.isVerified) {
+                            sellerStatus.style.display = 'none';
+                            listingSection.style.display = 'block';
+                        } else {
+                            sellerStatus.style.display = 'block';
+                            listingSection.style.display = 'none';
+                        }
+                    } else if (currentUserDoc.role === 'admin') {
+                        sellerError.textContent = "You are logged in as Admin. Go to the Admin Dashboard.";
+                        authForm.style.display = 'none';
+                    } else {
+                        sellerError.textContent = "You are logged in as a Student. Please log out to register as a Seller.";
+                        authForm.style.display = 'none';
+                    }
+                }
+            } else {
+                authForm.style.display = 'flex';
+                sellerStatus.style.display = 'none';
+                listingSection.style.display = 'none';
+            }
+        });
+
+        // Register Seller
+        authForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = authForm.querySelector('button');
+            btn.textContent = "Processing...";
+            btn.disabled = true;
+            sellerError.textContent = "";
+
+            const email = document.getElementById('seller-email').value;
+            const password = document.getElementById('seller-password').value;
+            const brandName = document.getElementById('brand-name').value;
+            const phone = document.getElementById('seller-phone').value;
+            const desc = document.getElementById('brand-desc').value;
+
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                await setDoc(doc(db, "users", userCredential.user.uid), {
+                    name: brandName,
+                    email: email,
+                    phone: phone,
+                    companyName: brandName,
+                    description: desc,
+                    role: 'seller',
+                    isVerified: false,
+                    createdAt: serverTimestamp()
+                });
+                localStorage.setItem('isLoggedIn', 'true');
+                localStorage.setItem('userRole', 'seller');
+                localStorage.setItem('userId', userCredential.user.uid);
+                window.location.reload(); // Reload to trigger onAuthStateChanged
+            } catch (error) {
+                sellerError.textContent = error.message.replace('Firebase: ', '');
+                btn.textContent = "Register as Seller";
+                btn.disabled = false;
+            }
+        });
+
+        // Image compression and listing code
+        const imageInput = document.getElementById('product-image');
+        const preview = document.getElementById('preview');
+        let compressedImageBase64 = null;
+
+        function compressImage(base64Str, maxWidth = 500, maxHeight = 500) {
+            return new Promise((resolve) => {
+                let img = new Image();
+                img.src = base64Str;
+                img.onload = () => {
+                    let canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    if (width > height) {
+                        if (width > maxWidth) { height *= maxWidth / width; width = maxWidth; }
+                    } else {
+                        if (height > maxHeight) { width *= maxHeight / height; height = maxHeight; }
+                    }
+                    canvas.width = width; canvas.height = height;
+                    let ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    resolve(canvas.toDataURL('image/jpeg', 0.6));
+                };
+            });
+        }
+
+        imageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                    compressedImageBase64 = await compressImage(e.target.result);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        document.getElementById('listing-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!compressedImageBase64) { alert("Please upload an image first!"); return; }
+
+            const btn = e.target.querySelector('.btn-submit');
+            btn.textContent = "Uploading to Database...";
+            btn.disabled = true;
+
+            try {
+                await addDoc(collection(db, "products"), {
+                    name: document.getElementById('product-name').value,
+                    category: document.getElementById('product-category').value,
+                    price: document.getElementById('product-price').value,
+                    description: document.getElementById('product-desc').value,
+                    image: compressedImageBase64,
+                    sellerName: currentUserDoc.companyName || "Verified Seller",
+                    sellerId: auth.currentUser.uid,
+                    createdAt: serverTimestamp()
+                });
+
+                btn.textContent = "Successfully Listed!";
+                btn.style.background = "#2ed573";
+                setTimeout(() => {
+                    e.target.reset();
+                    preview.style.display = 'none';
+                    compressedImageBase64 = null;
+                    btn.textContent = "Add to Shop";
+                    btn.style.background = "linear-gradient(135deg, var(--deep-rose), var(--accent-purple))";
+                    btn.disabled = false;
+                }, 2000);
+            } catch (error) {
+                console.error("Error adding document: ", error);
+                alert("Failed to list product.");
+                btn.textContent = "Add to Shop";
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

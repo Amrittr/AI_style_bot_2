@@ -134,23 +134,25 @@ body {
 }
 
 .message.bot .bubble {
-    background-color: var(--soft-lavender);
+    background: linear-gradient(135deg, var(--soft-lavender), #2a2a3e);
     color: var(--text-light);
     border-top-left-radius: 4px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
-    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 15px rgba(185, 103, 255, 0.15);
+    border: 1px solid rgba(185, 103, 255, 0.2);
+    backdrop-filter: blur(10px);
 }
 
 .message.user .bubble {
-    background-color: var(--deep-rose);
+    background: linear-gradient(135deg, var(--deep-rose), #ff4d85);
     color: var(--text-light);
     border-top-right-radius: 4px;
-    box-shadow: 0 2px 12px rgba(255, 42, 109, 0.3);
+    box-shadow: 0 4px 15px rgba(255, 42, 109, 0.4);
 }
 
 .bottom-area {
     padding: 16px 24px 24px 24px;
-    background-color: var(--bg-panel);
+    background: rgba(22, 22, 26, 0.8);
+    backdrop-filter: blur(20px);
     border-top: 1px solid var(--border-color);
 }
 

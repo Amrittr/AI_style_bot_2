@@ -14,7 +14,7 @@ const app = express();
 app.use(express.json({ limit: '10mb' }));
 const PORT = process.env.PORT || 3000;
 
-const GEMINI_API_KEY = "AIzaSyBpxmLFYBBLv-fFK9aEm9Rjb3LNd1nW0Ms";
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));

@@ -7,6 +7,7 @@ const imageUpload = document.getElementById('image-upload');
 const imagePreviewContainer = document.getElementById('image-preview-container');
 const imagePreview = document.getElementById('image-preview');
 const removeImageBtn = document.getElementById('remove-image');
+const micBtn = document.getElementById('mic-btn');
 
 // Camera Elements
 const cameraBtn = document.getElementById('camera-btn');
@@ -19,6 +20,15 @@ const cameraCanvas = document.getElementById('camera-canvas');
 let conversationHistory = [];
 let currentImageBase64 = null;
 let stream = null;
+
+// Save History Function
+function saveHistory() {
+    if (conversationHistory.length > 10) {
+        conversationHistory = conversationHistory.slice(-10);
+    }
+    const historyKey = window.currentUserId ? `stylebot_history_${window.currentUserId}` : 'stylebot_history';
+    localStorage.setItem(historyKey, JSON.stringify(conversationHistory));
+}
 
 // Convert file to base64
 function getBase64(file) {
@@ -193,6 +203,7 @@ async function sendMessage(text) {
 
     // Add to history
     conversationHistory.push(userMessage);
+    saveHistory();
 
     setTyping(true);
 
@@ -211,6 +222,7 @@ async function sendMessage(text) {
 
         if (response.ok && data.reply) {
             conversationHistory.push({ role: 'assistant', content: data.reply });
+            saveHistory();
             appendMessage(data.reply, 'bot');
         } else {
             console.error("Error from server:", data);
@@ -242,3 +254,76 @@ document.querySelectorAll('.chip').forEach(chip => {
         sendMessage(chip.textContent);
     });
 });
+
+// Load History
+window.addEventListener('userLoaded', () => {
+    const historyKey = window.currentUserId ? `stylebot_history_${window.currentUserId}` : 'stylebot_history';
+    const savedHistory = localStorage.getItem(historyKey);
+    if (savedHistory) {
+        try {
+            const parsed = JSON.parse(savedHistory);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                conversationHistory = parsed;
+                if (quickChips) quickChips.style.display = 'none';
+                
+                parsed.forEach(msg => {
+                    if (msg.role === 'user') {
+                        appendMessage(msg.content, 'user', msg.image);
+                    } else if (msg.role === 'assistant') {
+                        appendMessage(msg.content, 'bot');
+                    }
+                });
+            }
+        } catch (e) {
+            console.error("Error loading history", e);
+        }
+    }
+});
+
+// Speech to Text
+if (micBtn) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
+
+        let isRecording = false;
+
+        micBtn.addEventListener('click', () => {
+            if (!isRecording) {
+                recognition.start();
+                micBtn.style.backgroundColor = 'var(--deep-rose)';
+                micBtn.style.color = 'white';
+                isRecording = true;
+            } else {
+                recognition.stop();
+                micBtn.style.backgroundColor = 'var(--bg-panel)';
+                micBtn.style.color = 'var(--text-light)';
+                isRecording = false;
+            }
+        });
+
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            userInput.value += (userInput.value ? ' ' : '') + transcript;
+        };
+
+        recognition.onspeechend = () => {
+            recognition.stop();
+            micBtn.style.backgroundColor = 'var(--bg-panel)';
+            micBtn.style.color = 'var(--text-light)';
+            isRecording = false;
+        };
+
+        recognition.onerror = (event) => {
+            console.error('Speech recognition error', event.error);
+            micBtn.style.backgroundColor = 'var(--bg-panel)';
+            micBtn.style.color = 'var(--text-light)';
+            isRecording = false;
+        };
+    } else {
+        micBtn.style.display = 'none';
+    }
+}

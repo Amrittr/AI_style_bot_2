@@ -75,6 +75,13 @@
         <a href="index.html" style="color: white; text-decoration: none; font-size: 1.4rem; position: absolute; top: 20px; left: 20px;">← Back</a>
         <h2 id="form-title">Login to StyleBot</h2>
         <form class="login-form" id="auth-form">
+            <div id="signup-fields" style="display: none; flex-direction: column; gap: 16px;">
+                <input type="text" id="fullname" placeholder="Full Name">
+                <div style="text-align: left;">
+                    <label for="dob" style="font-size: 0.9rem; color: #a0a0a0; margin-left: 4px;">Date of Birth:</label>
+                    <input type="date" id="dob" style="width: 100%; margin-top: 4px;">
+                </div>
+            </div>
             <input type="email" id="email" placeholder="Email Address" required>
             <input type="password" id="password" placeholder="Password" required>
             <button type="submit" class="btn-login" id="submit-btn">Login</button>
@@ -88,7 +95,8 @@
     <!-- Firebase SDK Setup -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDabzhKYknphhV7dUbN7pgcYB940e9z1-w",
@@ -103,6 +111,7 @@
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
+        const db = getFirestore(app);
 
         let isLogin = true;
         const formTitle = document.getElementById('form-title');
@@ -110,11 +119,13 @@
         const toggleAuth = document.getElementById('toggle-auth');
         const errorMsg = document.getElementById('error-msg');
         const authForm = document.getElementById('auth-form');
+        const signupFields = document.getElementById('signup-fields');
 
         toggleAuth.addEventListener('click', () => {
             isLogin = !isLogin;
             formTitle.textContent = isLogin ? 'Login to StyleBot' : 'Sign Up for StyleBot';
             submitBtn.textContent = isLogin ? 'Login' : 'Sign Up';
+            signupFields.style.display = isLogin ? 'none' : 'flex';
             document.getElementById('switch-mode').innerHTML = isLogin 
                 ? 'Don\'t have an account? <a id="toggle-auth" style="color: var(--blush-pink); cursor: pointer;">Sign Up</a>'
                 : 'Already have an account? <a id="toggle-auth" style="color: var(--blush-pink); cursor: pointer;">Login</a>';
@@ -134,10 +145,35 @@
 
             try {
                 if (isLogin) {
-                    await signInWithEmailAndPassword(auth, email, password);
+                    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                    const docSnap = await getDoc(doc(db, "users", userCredential.user.uid));
+                    if (docSnap.exists() && docSnap.data().role) {
+                        localStorage.setItem('userRole', docSnap.data().role);
+                    } else {
+                        localStorage.setItem('userRole', 'student');
+                    }
+                    localStorage.setItem('userId', userCredential.user.uid);
                 } else {
-                    await createUserWithEmailAndPassword(auth, email, password);
+                    const fullname = document.getElementById('fullname').value;
+                    const dob = document.getElementById('dob').value;
+                    if (!fullname || !dob) {
+                        throw new Error("Please provide your name and date of birth.");
+                    }
+                    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                    await updateProfile(userCredential.user, { displayName: fullname });
+                    localStorage.setItem(`user_dob_${userCredential.user.uid}`, dob);
+                    
+                    // Save to Firestore users collection
+                    await setDoc(doc(db, "users", userCredential.user.uid), {
+                        name: fullname,
+                        email: email,
+                        role: 'student',
+                        createdAt: serverTimestamp()
+                    });
+                    localStorage.setItem('userRole', 'student');
+                    localStorage.setItem('userId', userCredential.user.uid);
                 }
+                localStorage.setItem('isLoggedIn', 'true');
                 window.location.href = 'chat.html';
             } catch (error) {
                 errorMsg.textContent = error.message.replace('Firebase: ', '');

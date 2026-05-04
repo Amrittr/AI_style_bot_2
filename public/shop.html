@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StyleBot - Community Store</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .store-header {
+            text-align: center;
+            padding: 60px 20px 40px;
+        }
+        .store-header h1 {
+            font-size: 3rem;
+            color: var(--text-light);
+            margin-bottom: 10px;
+        }
+        .store-header p {
+            color: #a0a0a0;
+            font-size: 1.1rem;
+        }
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 30px;
+            padding: 0 6% 80px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .product-card {
+            background: rgba(42, 42, 42, 0.4);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 16px;
+            overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .product-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.4);
+            border-color: rgba(255,255,255,0.1);
+        }
+        .product-image {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+            background: #1e1e1e;
+        }
+        .product-info {
+            padding: 20px;
+        }
+        .product-seller {
+            color: var(--blush-pink);
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        .product-title {
+            font-size: 1.2rem;
+            color: white;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        .product-price {
+            font-size: 1.3rem;
+            color: white;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+        .btn-buy {
+            display: block;
+            width: 100%;
+            text-align: center;
+            background: linear-gradient(135deg, var(--deep-rose), var(--accent-purple));
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: opacity 0.2s;
+        }
+        .btn-buy:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body class="home-body">
+    
+    <!-- Navbar -->
+    <nav class="navbar">
+        <a href="index.html" class="nav-logo" style="text-decoration:none; color:inherit;">StyleBot ✦</a>
+        <div class="nav-links">
+            <a href="index.html#features">Features</a>
+            <a href="shop.html" style="color: var(--blush-pink);">Shop Now</a>
+            <a href="seller.html" id="nav-seller">Become a Seller</a>
+            <a href="admin.html" id="nav-admin" style="display: none; color: #ffaa00; font-weight: 600;">Verify Sellers</a>
+            <a href="login.html" id="nav-login">Login</a>
+            <a href="profile.html" id="nav-profile" style="display: none; color: var(--blush-pink);">Profile</a>
+            <a href="#" id="nav-logout" style="display: none; color: #ff6b6b;">Logout</a>
+            <a href="chat.html" class="nav-btn">Start Chatting</a>
+        </div>
+    </nav>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, collection, getDocs, query, orderBy, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDabzhKYknphhV7dUbN7pgcYB940e9z1-w",
+            authDomain: "aistylebot-6e93b.firebaseapp.com",
+            databaseURL: "https://aistylebot-6e93b-default-rtdb.firebaseio.com",
+            projectId: "aistylebot-6e93b",
+            storageBucket: "aistylebot-6e93b.firebasestorage.app",
+            messagingSenderId: "29328792960",
+            appId: "1:29328792960:web:f3ebc8afe0581dedb43565",
+            measurementId: "G-1QZ0W9K5S4"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        if (localStorage.getItem('isLoggedIn') === 'true') {
+            const loginBtn = document.getElementById('nav-login');
+            if (loginBtn) loginBtn.style.display = 'none';
+            const profileBtn = document.getElementById('nav-profile');
+            if (profileBtn) profileBtn.style.display = 'inline';
+            const logoutBtn = document.getElementById('nav-logout');
+            if (logoutBtn) {
+                logoutBtn.style.display = 'inline';
+                logoutBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    localStorage.removeItem('isLoggedIn');
+                    localStorage.removeItem('userRole');
+                    localStorage.removeItem('userId');
+                    window.location.reload();
+                });
+            }
+            if (localStorage.getItem('userRole') === 'admin') {
+                const navSeller = document.getElementById('nav-seller');
+                if (navSeller) navSeller.style.display = 'none';
+                const navAdmin = document.getElementById('nav-admin');
+                if (navAdmin) navAdmin.style.display = 'inline';
+            } else if (localStorage.getItem('userRole') === 'seller') {
+                const navSeller = document.getElementById('nav-seller');
+                if (navSeller) navSeller.textContent = 'Add a Product';
+            }
+        }
+        
+        loadProducts();
+
+        // Load Products safely
+        async function loadProducts() {
+            const grid = document.getElementById('products-grid');
+            grid.innerHTML = '<p style="text-align:center; grid-column: 1 / -1; color:var(--text-light); font-size: 1.2rem;">Fetching latest styles from the database...</p>';
+            
+            try {
+                const querySnapshot = await getDocs(collection(db, "products"));
+                
+                grid.innerHTML = ''; // clear loading
+                
+                if (querySnapshot.empty) {
+                    grid.innerHTML = '<p style="text-align:center; grid-column: 1 / -1; color:#a0a0a0; font-size: 1.2rem;">No products listed yet. Be the first to become a seller!</p>';
+                    return;
+                }
+
+                const currentUser = { uid: localStorage.getItem('userId') };
+                const userRole = localStorage.getItem('userRole');
+
+                querySnapshot.forEach((docSnap) => {
+                    const product = docSnap.data();
+                    const card = document.createElement('div');
+                    card.className = 'product-card';
+                    
+                    let deleteBtnHTML = '';
+                    if (currentUser.uid && (userRole === 'admin' || (userRole === 'seller' && product.sellerId === currentUser.uid))) {
+                        deleteBtnHTML = `<button class="btn-delete" data-id="${docSnap.id}" style="background: transparent; color: #ff4757; border: 1px solid #ff4757; padding: 8px; border-radius: 6px; cursor: pointer; margin-top: 10px; width: 100%; font-weight: 600; transition: all 0.2s;">🗑️ Delete Product</button>`;
+                    }
+
+                    card.innerHTML = `
+                        <img src="${product.image || 'hero.png'}" alt="${product.name}" class="product-image">
+                        <div class="product-info">
+                            <div class="product-seller">${product.sellerName || 'Independent Seller'}</div>
+                            <div class="product-title">${product.name}</div>
+                            <div class="product-price">₹${product.price}</div>
+                            <a href="#" class="btn-buy" onclick="alert('Redirecting to checkout for ${product.name}...')">Buy Now</a>
+                            ${deleteBtnHTML}
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+
+                // Attach delete listeners
+                document.querySelectorAll('.btn-delete').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        if (confirm('Are you sure you want to delete this product?')) {
+                            const productId = e.target.getAttribute('data-id');
+                            try {
+                                await deleteDoc(doc(db, "products", productId));
+                                loadProducts(); // Refresh
+                            } catch (error) {
+                                console.error("Error deleting:", error);
+                                alert("Failed to delete product.");
+                            }
+                        }
+                    });
+                });
+            } catch (error) {
+                console.error("Error loading products:", error);
+                grid.innerHTML = '<p style="text-align:center; grid-column: 1 / -1; color:#ff6b6b; font-size: 1.2rem;">Error loading products. Make sure Firestore is enabled in Test Mode.</p>';
+            }
+        }
+    </script>
+
+    <div class="store-header">
+        <h1>Community Store</h1>
+        <p>Discover and shop unique styles listed by independent sellers.</p>
+    </div>
+
+    <div class="products-grid" id="products-grid">
+        <!-- Products will load here dynamically -->
+    </div>
+
+</body>
+</html>
