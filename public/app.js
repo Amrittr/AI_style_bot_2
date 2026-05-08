@@ -3,23 +3,9 @@ const userInput = document.getElementById('user-input');
 const sendBtn = document.getElementById('send-btn');
 const quickChips = document.getElementById('quick-chips');
 const typingIndicator = document.getElementById('typing-indicator');
-const imageUpload = document.getElementById('image-upload');
-const imagePreviewContainer = document.getElementById('image-preview-container');
-const imagePreview = document.getElementById('image-preview');
-const removeImageBtn = document.getElementById('remove-image');
 const micBtn = document.getElementById('mic-btn');
 
-// Camera Elements
-const cameraBtn = document.getElementById('camera-btn');
-const cameraModal = document.getElementById('camera-modal');
-const cameraFeed = document.getElementById('camera-feed');
-const snapBtn = document.getElementById('snap-btn');
-const closeCameraBtn = document.getElementById('close-camera-btn');
-const cameraCanvas = document.getElementById('camera-canvas');
-
 let conversationHistory = [];
-let currentImageBase64 = null;
-let stream = null;
 
 // Save History Function
 function saveHistory() {
@@ -30,71 +16,6 @@ function saveHistory() {
     localStorage.setItem(historyKey, JSON.stringify(conversationHistory));
 }
 
-// Convert file to base64
-function getBase64(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = error => reject(error);
-    });
-}
-
-imageUpload.addEventListener('change', async (e) => {
-    const file = e.target.files[0];
-    if (file) {
-        try {
-            currentImageBase64 = await getBase64(file);
-            imagePreview.src = currentImageBase64;
-            imagePreviewContainer.style.display = 'block';
-        } catch (error) {
-            console.error("Error reading file:", error);
-        }
-    }
-});
-
-removeImageBtn.addEventListener('click', () => {
-    currentImageBase64 = null;
-    imageUpload.value = '';
-    imagePreviewContainer.style.display = 'none';
-});
-
-// Camera Functionality
-cameraBtn.addEventListener('click', async () => {
-    try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-        cameraFeed.srcObject = stream;
-        cameraModal.classList.remove('hidden');
-    } catch (err) {
-        console.error("Error accessing camera:", err);
-        alert("Could not access camera. Please ensure permissions are granted in your browser settings.");
-    }
-});
-
-function closeCamera() {
-    if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-        stream = null;
-    }
-    cameraModal.classList.add('hidden');
-}
-
-closeCameraBtn.addEventListener('click', closeCamera);
-
-snapBtn.addEventListener('click', () => {
-    if (!stream) return;
-    const context = cameraCanvas.getContext('2d');
-    cameraCanvas.width = cameraFeed.videoWidth;
-    cameraCanvas.height = cameraFeed.videoHeight;
-    context.drawImage(cameraFeed, 0, 0, cameraCanvas.width, cameraCanvas.height);
-    
-    // Get high-quality JPEG base64
-    currentImageBase64 = cameraCanvas.toDataURL('image/jpeg', 0.9);
-    imagePreview.src = currentImageBase64;
-    imagePreviewContainer.style.display = 'block';
-    
-    closeCamera();
-});
 
 // Format message for display and replace markdown links with actual anchors
 function formatMessage(text) {
@@ -178,26 +99,48 @@ function setTyping(isTyping) {
     }
 }
 
+function generateDynamicChips(text) {
+    if (!quickChips) return;
+    
+    text = text.toLowerCase();
+    let options = [];
+    
+    if (text.includes('gender') || text.includes('male or female') || text.includes('male, female')) {
+        options = ['Male', 'Female', 'Non-binary'];
+    } else if (text.includes('age') || text.includes('how old') || text.includes('years old')) {
+        options = ['16 - 19', '20 - 24', '25 - 34', '35+'];
+    } else if (text.includes('occasion') || text.includes('dressing for') || text.includes('event')) {
+        options = ['Casual outing', 'Office wear', 'Party / Club', 'Wedding', 'Date night'];
+    } else if (text.includes('budget') || text.includes('price')) {
+        options = ['Under ₹2,000', '₹2,000 - ₹5,000', '₹5,000+'];
+    }
+    
+    if (options.length > 0) {
+        quickChips.innerHTML = '';
+        options.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'chip';
+            btn.textContent = opt;
+            quickChips.appendChild(btn);
+        });
+        quickChips.style.display = 'flex';
+    }
+}
+
 async function sendMessage(text) {
-    if (!text.trim() && !currentImageBase64) return;
+    if (!text.trim()) return;
 
     // Add user message to UI
-    appendMessage(text, 'user', currentImageBase64);
+    appendMessage(text, 'user');
     
     // Create message object for history
     const userMessage = { role: 'user', content: text };
-    if (currentImageBase64) {
-        userMessage.image = currentImageBase64;
-    }
     
     // Clear input
     userInput.value = '';
-    currentImageBase64 = null;
-    imageUpload.value = '';
-    imagePreviewContainer.style.display = 'none';
     
-    // Hide chips after first interaction
-    if (quickChips && !quickChips.classList.contains('hidden')) {
+    // Hide chips when user sends a message
+    if (quickChips) {
         quickChips.style.display = 'none';
     }
 
@@ -224,9 +167,11 @@ async function sendMessage(text) {
             conversationHistory.push({ role: 'assistant', content: data.reply });
             saveHistory();
             appendMessage(data.reply, 'bot');
+            generateDynamicChips(data.reply);
         } else {
             console.error("Error from server:", data);
-            appendMessage("Oops! I had a little wardrobe malfunction communicating with my server. 🥺", 'bot');
+            const errorMsg = data.error || "Oops! I had a little wardrobe malfunction communicating with my server. 🥺";
+            appendMessage(errorMsg, 'bot');
             conversationHistory.pop(); // remove last user message
         }
     } catch (error) {
@@ -249,11 +194,23 @@ userInput.addEventListener('keypress', (e) => {
 });
 
 // Quick Chips interactions
-document.querySelectorAll('.chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-        sendMessage(chip.textContent);
+if (quickChips) {
+    quickChips.addEventListener('click', (e) => {
+        if (e.target.classList.contains('chip')) {
+            sendMessage(e.target.textContent);
+        }
     });
-});
+}
+
+// New Chat functionality
+const newChatBtn = document.getElementById('new-chat-btn');
+if (newChatBtn) {
+    newChatBtn.addEventListener('click', () => {
+        const historyKey = window.currentUserId ? `stylebot_history_${window.currentUserId}` : 'stylebot_history';
+        localStorage.removeItem(historyKey);
+        window.location.reload();
+    });
+}
 
 // Load History
 window.addEventListener('userLoaded', () => {
@@ -273,6 +230,10 @@ window.addEventListener('userLoaded', () => {
                         appendMessage(msg.content, 'bot');
                     }
                 });
+                const lastMsg = parsed[parsed.length - 1];
+                if (lastMsg.role === 'assistant') {
+                    generateDynamicChips(lastMsg.content);
+                }
             }
         } catch (e) {
             console.error("Error loading history", e);

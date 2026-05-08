@@ -66,6 +66,17 @@
         <div style="color: #ffaa00; font-weight: 600; font-size: 1.2rem;">Admin Dashboard</div>
     </nav>
 
+    <div class="admin-container" style="margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h2 style="margin:0; color: var(--text-light);">API Configuration</h2>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <input type="password" id="api-key-input" placeholder="Paste new Gemini API Key here..." style="flex: 1; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); background: #1e1e1e; color: white;">
+            <button id="btn-update-key" style="background: var(--blush-pink); color: black; font-weight: 600; border: none; padding: 0 20px; border-radius: 8px; cursor: pointer;">Update Key</button>
+        </div>
+        <p id="api-key-status" style="margin-top: 10px; font-size: 0.9rem; color: #a0a0a0;"></p>
+    </div>
+
     <div class="admin-container">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
             <h2 style="margin:0; color: var(--text-light);">Seller Dashboard</h2>
@@ -103,6 +114,40 @@
                 const docSnap = await getDoc(doc(db, "users", user.uid));
                 if (docSnap.exists() && docSnap.data().role === 'admin') {
                     loadSellers();
+                    
+                    const updateBtn = document.getElementById('btn-update-key');
+                    if(updateBtn) {
+                        updateBtn.addEventListener('click', async () => {
+                            const newKey = document.getElementById('api-key-input').value.trim();
+                            const statusMsg = document.getElementById('api-key-status');
+                            if(!newKey) {
+                                statusMsg.textContent = "Please enter a key!";
+                                statusMsg.style.color = "#ff4757";
+                                return;
+                            }
+                            try {
+                                statusMsg.textContent = "Updating...";
+                                statusMsg.style.color = "#a0a0a0";
+                                const res = await fetch('/api/admin/update-key', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ apiKey: newKey })
+                                });
+                                const data = await res.json();
+                                if(res.ok) {
+                                    statusMsg.textContent = "API Key updated successfully!";
+                                    statusMsg.style.color = "#2ed573";
+                                    document.getElementById('api-key-input').value = "";
+                                } else {
+                                    statusMsg.textContent = "Failed: " + (data.error || "Unknown error");
+                                    statusMsg.style.color = "#ff4757";
+                                }
+                            } catch(err) {
+                                statusMsg.textContent = "Error updating key.";
+                                statusMsg.style.color = "#ff4757";
+                            }
+                        });
+                    }
                 } else {
                     document.body.innerHTML = "<h2 style='color:red; text-align:center; margin-top:50px;'>Access Denied. Admins Only.</h2>";
                 }
