@@ -65,7 +65,7 @@ graph TD
    ```
 
 3. **Configure Environment Variables**:
-   Create a `.env` file in the root directory and add your Gemini API Key:
+   Copy `.env.example` to `.env` (`cp .env.example .env`) and add your Gemini API Key:
    ```env
    GEMINI_API_KEY=your_gemini_api_key_here
    PORT=3000
